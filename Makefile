@@ -1,0 +1,6 @@
+
+
+
+
+do:
+	g++ main.cpp
