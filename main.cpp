@@ -15,13 +15,24 @@ typedef struct {
 
 double f1(double x) { return 0.4 * x * x * x + 3 * x * x + x - 13; }
 
-double derivative(int dif, double point, double (*f)(double)) { return 0; }
+double derivative(
+    int dif, double point, double (*f)(double),
+    double eps = 0.00001) { // нам важен знак, большой esp приводит к нулю
+    if (dif == 0) {
+        return f(point);
+    } else {
+        dif--;
+        return (derivative(dif, point + eps, f) - derivative(dif, point, f)) /
+               eps;
+    }
+}
 double delta(double x_k, double x_k_minus_one) {
     return fabs(x_k - x_k_minus_one);
 }
+
 double secant_method(double (*f)(double), double a, double b, double eps,
-                     size_t max_iter,
-                     std::vector<data_table_for_secant_metod> &data_tab) {
+                     std::vector<data_table_for_secant_metod> &data_tab,
+                     size_t max_iter = 10000) {
     bool cheak_zero_derivative = false;
     bool left_rigth = false;
     double point;
@@ -52,14 +63,7 @@ double secant_method(double (*f)(double), double a, double b, double eps,
             }
             x_exit = x;
             x = a - (b - a) / (f(b) - f(a)) * f(a);
-            data_tab.push_back({
-                a,
-                b,
-                x,
-                f(a),
-                f(b),
-                f(x),
-            });
+            data_tab.push_back({a, b, x, f(a), f(b), f(x), delta(x, x_exit)});
         } else {
             x_exit = x;
             x = x - (point - x) / (f(point) - f(x)) * f(x);
@@ -78,11 +82,14 @@ double secant_method(double (*f)(double), double a, double b, double eps,
 }
 
 int main() {
+    std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
+
     std::vector<data_table_for_secant_metod> data_tab;
-    double x = secant_method(f1, -4, -1, 0.01, 10000, data_tab);
+    double x = secant_method(f1, -4, -1, 0.000001, data_tab);
     std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
     for (const auto &i : data_tab) {
         std::cout << i.a << ' ' << i.b << ' ' << i.x << ' ' << i.f_a << ' '
                   << i.f_b << ' ' << i.f_x << ' ' << i.delta_eps << '\n';
     }
+    std::cout << "\n\n" << x;
 }
