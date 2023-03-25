@@ -1,8 +1,13 @@
+#include <boost/numeric/ublas/tensor.hpp>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <limits>
 #include <vector>
+typedef struct {
+    double x;
+    double f_x;
+} x_and_f_x;
 typedef struct {
     double a;
     double b;
@@ -12,6 +17,13 @@ typedef struct {
     double f_x;
     double delta_eps;
 } data_table_for_secant_metod;
+typedef struct {
+    double x_k_minus_one;
+    double f_x_k_minus_one;
+    double x_k;
+    double g_x_k_minus_one;
+    double delta_eps;
+} data_table_for_fixed_point_iteration;
 
 double f1(double x) { return 0.4 * x * x * x + 3 * x * x + x - 13; }
 
@@ -30,9 +42,9 @@ double delta(double x_k, double x_k_minus_one) {
     return fabs(x_k - x_k_minus_one);
 }
 
-double secant_method(double (*f)(double), double a, double b, double eps,
-                     std::vector<data_table_for_secant_metod> &data_tab,
-                     size_t max_iter = 10000) {
+x_and_f_x secant_method(double (*f)(double), double a, double b, double eps,
+                        std::vector<data_table_for_secant_metod> &data_tab,
+                        size_t max_iter = 10000) {
     bool cheak_zero_derivative = false;
     bool left_rigth = false;
     double point;
@@ -78,18 +90,53 @@ double secant_method(double (*f)(double), double a, double b, double eps,
         }
         currend_iterating++;
     }
-    return x;
+    return {x, f(x)};
+}
+
+double optimal_func(double x, double (*f)(double)) {
+    return x - (1 / derivative(1, x, f)) * f(x);
+}
+double relaxation_method(double x,
+                         double (*f)(double)) { // -2 < C*f'(x) < 0
+                                                // -2/f'(x) < C < 0
+                                                // c = -1/f'(x)
+    return -1 / derivative(1, x, f);
+}
+double fi_func(double x, double (*f)(double)) {
+    return x + relaxation_method(x, f) * f(x);
+}
+x_and_f_x fixed_point_iteration_metod(
+    double x, double (*f)(double), double eps,
+    std::vector<data_table_for_fixed_point_iteration> &data_tab,
+    size_t max_iter = 1000) {
+    double x_exit = fi_func(x, f);
+    data_tab.push_back({x, f(x), x_exit, fi_func(x, f), delta(x, x_exit)});
+    size_t currend_iterating = 0;
+    while (delta(x, x_exit) > eps && currend_iterating < max_iter) {
+        x = x_exit;
+        x_exit = fi_func(x_exit, f);
+        data_tab.push_back({x, f(x), x_exit, fi_func(x, f), delta(x, x_exit)});
+        currend_iterating++;
+    }
+
+    return {x, f(x)};
 }
 
 int main() {
     std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
 
     std::vector<data_table_for_secant_metod> data_tab;
-    double x = secant_method(f1, -4, -1, 0.000001, data_tab);
-    std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
+    x_and_f_x x_f_x = secant_method(f1, -4, -1, 0.000001, data_tab);
     for (const auto &i : data_tab) {
         std::cout << i.a << ' ' << i.b << ' ' << i.x << ' ' << i.f_a << ' '
                   << i.f_b << ' ' << i.f_x << ' ' << i.delta_eps << '\n';
     }
-    std::cout << "\n\n" << x;
+    std::cout << "\n\n" << x_f_x.x << ' ' << x_f_x.f_x << '\n';
+    std::vector<data_table_for_fixed_point_iteration> data_tab1;
+    x_and_f_x x_f_x1 = fixed_point_iteration_metod(-4, f1, 0.000001, data_tab1);
+    for (const auto &i : data_tab1) {
+        std::cout << i.x_k << ' ' << i.x_k_minus_one << ' ' << i.f_x_k_minus_one
+                  << ' ' << i.g_x_k_minus_one << ' ' << i.delta_eps << '\n';
+    }
+    std::cout << "\n\n" << x_f_x1.x << ' ' << x_f_x1.f_x << '\n';
 }
