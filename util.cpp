@@ -1,9 +1,7 @@
 #include "util.h"
-#include <cmath>
 
-double derivative(
-    int dif, double point, double (*f)(double),
-    double eps = 0.00001) { // нам важен знак, большой esp приводит к нулю
+double derivative(int dif, double point, double (*f)(double),
+                  double eps) { // нам важен знак, большой esp приводит к нулю
     if (dif == 0) {
         return f(point);
     } else {
