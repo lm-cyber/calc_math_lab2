@@ -17,7 +17,7 @@ double relaxation_method(double x, double (*f)(double));
 
 double fi_func(double x, double (*f)(double));
 x_and_f_x fixed_point_iteration_metod(
-    double x, double (*f)(double), double eps,
+    double (*f)(double), double x, double eps,
     std::vector<data_table_for_fixed_point_iteration> &data_tab,
     size_t max_iter = 1000);
 
